@@ -13,7 +13,7 @@ gem install customer_miner
 cm set_key key=your-secret-key
 
 # Query customer from clearbit csv file export from ga
-cm query ./Clearbit.csv
+cm ./Clearbit.csv
 ```
 
 MIT
