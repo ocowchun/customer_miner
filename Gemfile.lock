@@ -1,0 +1,19 @@
+PATH
+  remote: .
+  specs:
+    customer_miner.gemspec (0.0.1)
+      thor (~> 0.19.4)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    thor (0.19.4)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  customer_miner.gemspec!
+
+BUNDLED WITH
+   1.13.7
