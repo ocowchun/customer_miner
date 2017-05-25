@@ -34,5 +34,9 @@ module CustomerMiner
       key = File.read(file_name)
       Query.new(file: args, secret_key:key).perform
     end
+
+    def method_missing(file)
+      query(file.to_s)
+    end
   end
 end
