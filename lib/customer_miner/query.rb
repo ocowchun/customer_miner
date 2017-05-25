@@ -1,4 +1,3 @@
-require 'httparty'
 require 'csv'
 require 'json'
 require 'typhoeus'
@@ -14,7 +13,8 @@ module CustomerMiner
       domains = extract_domains
       puts "get #{domains.size} domain from csv #{@file}"
       puts "start request clearbit"
-      query_clearbit(domains)
+      res = query_clearbit(domains)
+      build_csv(res)
     end
 
     private
@@ -43,14 +43,38 @@ module CustomerMiner
       end
       hydra.run
       puts "complete requests"
-      requests.select{ |req| req.response.success? }.map do |request|
+      requests.select { |req| req.response.success? }.map do |request|
         res_hash = JSON.parse(request.response.body)
         emails = res_hash.map { |person| person['email']}
         domain = request.options[:params][:domain]
-        puts request.options[:params]
-        puts "domain #{domain}"
-        puts "#{emails.join(',')}"
+        { domain: domain, people: res_hash }
       end
+    end
+
+    def build_csv(res)
+      rows = res.map do |item|
+        domain = item[:domain]
+        item[:people].map do |person|
+          build_row(person, domain)
+        end
+      end
+      headers = ['domain', 'fullName', 'title', 'role', 'seniority', 'email',
+        'verified', 'phone'].join(',')
+      file_content = [headers].concat(rows).join("\n")
+
+      file_path = "#{Dir.pwd}/result.csv"
+      File.open(file_path, 'w') do |file|
+        file.write(file_content)
+      end
+      puts "save file in #{file_path}"
+    end
+
+    def build_row(person, domain)
+      attrs = ['title', 'role', 'seniority', 'email', 'verified', 'phone']
+      person_attrs = attrs.map { |attr| person[attr] }
+      [domain, person['name']['fullName']].concat(person_attrs)
+        .map { |str| str.to_s.gsub(',', ";") }
+        .join(',')
     end
   end
 end
