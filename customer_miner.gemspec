@@ -17,4 +17,6 @@ Gem::Specification.new do |s|
   s.license       = 'MIT'
 
   s.add_dependency('thor',["~> 0.19.4"])
+  s.add_dependency('httparty',["~> 0.15.5"])
+  s.add_dependency('typhoeus',["~> 1.1"])
 end
