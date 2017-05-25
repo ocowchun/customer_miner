@@ -3,7 +3,7 @@ $LOAD_PATH << lib_dir unless $LOAD_PATH.include?(lib_dir)
 require 'customer_miner/version'
 
 Gem::Specification.new do |s|
-  s.name        = 'customer_miner.gemspec'
+  s.name        = 'customer_miner'
   s.version =  CustomerMiner::VERSION
   s.date        = '2017-05-25'
   s.summary     = "Fetch customer data using Clearbit API"
