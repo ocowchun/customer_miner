@@ -45,7 +45,6 @@ module CustomerMiner
       puts "complete requests"
       requests.select { |req| req.response.success? }.map do |request|
         res_hash = JSON.parse(request.response.body)
-        emails = res_hash.map { |person| person['email']}
         domain = request.options[:params][:domain]
         { domain: domain, people: res_hash }
       end
