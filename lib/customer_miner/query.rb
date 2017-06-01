@@ -1,12 +1,29 @@
 require 'csv'
 require 'json'
-require 'typhoeus'
+require 'clearbit'
+require 'thread/pool'
+require 'concurrent'
 
 module CustomerMiner
   class Query
-    def initialize(file:, secret_key:)
+    VALID_ROLES = ['ceo', 'communications', 'consulting', 'customer_service',
+      'education', 'engineering', 'finance', 'founder', 'health_professional',
+      'human_resources', 'information_technology', 'legal', 'marketing',
+      'operations', 'owner', 'president', 'product', 'public_relations',
+      'real_estate', 'recruiting', 'research', 'sales']
+
+    def initialize(file:, roles:, secret_key:)
       @file = file
       @secret_key = secret_key
+      unless roles.kind_of? Array
+        raise ArgumentError, "`roles` must be array"
+      end
+      roles.each do |role|
+        unless VALID_ROLES.include?(role)
+          raise ArgumentError, "Invalid role #{role}"
+        end
+      end
+      @roles = roles
     end
 
     def perform
@@ -26,28 +43,22 @@ module CustomerMiner
     end
 
     def query_clearbit(domains)
-      hydra = Typhoeus::Hydra.new(max_concurrency: 5)
-      url = 'https://prospector.clearbit.com/v1/people/search'
-      userpwd = "#{@secret_key}:"
-      requests = domains.map do |domain|
-        options = {
-          userpwd: userpwd,
-          params: {
-            domain: domain,
-            role: 'marketing'
-          }
-        }
-        req = Typhoeus::Request.new(url, options)
-        hydra.queue(req)
-        req
+      Clearbit.key = @secret_key
+      result = Concurrent::Array.new
+      pool = Thread.pool(4)
+      domains.each do |domain|
+        pool.process do
+          people = Clearbit::Prospector.search(domain: domain, roles: @roles)
+          if people.size > 0
+            result << { domain: domain, people: people }
+          end
+          puts "complete #{domain}"
+        end
       end
-      hydra.run
+
+      pool.shutdown
       puts "complete requests"
-      requests.select { |req| req.response.success? }.map do |request|
-        res_hash = JSON.parse(request.response.body)
-        domain = request.options[:params][:domain]
-        { domain: domain, people: res_hash }
-      end
+      result
     end
 
     def build_csv(res)

@@ -1,6 +1,8 @@
 require 'thor'
 require 'customer_miner/version'
 require 'customer_miner/query'
+require 'concurrent'
+require 'thread/pool'
 
 module CustomerMiner
   class CLI< Thor
@@ -24,19 +26,23 @@ module CustomerMiner
     end
 
     desc 'query', 'query customer data and generate csv file'
-    def query(args)
-      unless args
-        puts "plese speciy file name"
-        return
+    option :file, required: true, banner: './your-clearbit.csv',
+      desc: "CSV file export from Google Analytics"
+    option :roles, required: false, banner: "marketing,operations",
+      desc: "Roles you want to get. You can get available role in"\
+      " http://support.clearbit.com/article/120-employment-role-and-seniority"
+    def query
+      file = options[:file]
+
+      if options[:roles]
+        roles = options[:roles].split(',')
+      else
+        roles = ['marketing']
       end
 
-      file_name = "#{Dir.home}/.customer_miner"
-      key = File.read(file_name)
-      Query.new(file: args, secret_key:key).perform
-    end
-
-    def method_missing(file)
-      query(file.to_s)
+      secret_key_file_path = "#{Dir.home}/.customer_miner"
+      secret_key = File.read(secret_key_file_path)
+      Query.new(file: file, roles: roles, secret_key: secret_key).perform
     end
   end
 end
