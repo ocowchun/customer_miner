@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    customer_miner (0.0.3)
+    customer_miner (0.0.4)
       thor (~> 0.19.4)
       typhoeus (~> 1.1)
 
