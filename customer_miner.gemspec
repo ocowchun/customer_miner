@@ -17,7 +17,8 @@ Gem::Specification.new do |s|
   s.license       = 'MIT'
 
   s.add_dependency('thor',["~> 0.19.4"])
-  s.add_dependency('typhoeus',["~> 1.1"])
+  s.add_dependency('clearbit',["~> 0.2"])
+  s.add_dependency('concurrent-ruby',["~> 1.0.5"])
   s.add_development_dependency("rspec")
   s.add_development_dependency("webmock")
 end

@@ -1,7 +1,6 @@
 require 'csv'
 require 'json'
 require 'clearbit'
-require 'thread/pool'
 require 'concurrent'
 
 module CustomerMiner
@@ -30,7 +29,7 @@ module CustomerMiner
       domains = extract_domains
       puts "get #{domains.size} domain from csv #{@file}"
       puts "start request clearbit"
-      res = query_clearbit(domains)
+      res = perform_query(domains)
       build_csv(res)
     end
 
@@ -42,23 +41,25 @@ module CustomerMiner
       rows.map { |row| row['Clearbit Company Domain'] }.compact.uniq
     end
 
-    def query_clearbit(domains)
+    def perform_query(domains)
       Clearbit.key = @secret_key
-      result = Concurrent::Array.new
-      pool = Thread.pool(4)
-      domains.each do |domain|
-        pool.process do
-          people = Clearbit::Prospector.search(domain: domain, roles: @roles)
-          if people.size > 0
-            result << { domain: domain, people: people }
-          end
-          puts "complete #{domain}"
-        end
+      thread_pool = Concurrent::FixedThreadPool.new(5)
+      result_things = domains.map do |domain|
+        (Concurrent::Future.new executor: thread_pool do
+          fetch_people_data(domain)
+        end).execute
       end
 
-      pool.shutdown
-      puts "complete requests"
+      data = result_things.map(&:value)
+      result = result_things.map(&:value).compact
+      puts "complete requests #{result.size}"
       result
+    end
+
+    def fetch_people_data(domain)
+      puts "start fetch #{domain}"
+      people = Clearbit::Prospector.search(domain: domain, roles: @roles)
+      { domain: domain, people: people }
     end
 
     def build_csv(res)
