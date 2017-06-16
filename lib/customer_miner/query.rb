@@ -43,7 +43,8 @@ module CustomerMiner
 
     def perform_query(domains)
       Clearbit.key = @secret_key
-      thread_pool = Concurrent::FixedThreadPool.new(5)
+      thread_pool = Concurrent::FixedThreadPool.new(3)
+
       result_things = domains.map do |domain|
         (Concurrent::Future.new executor: thread_pool do
           fetch_people_data(domain)
@@ -53,7 +54,7 @@ module CustomerMiner
       data = result_things.map(&:value)
       result = result_things.map(&:value).compact
       puts "complete requests #{result.size}"
-      result
+      result.select { |item| item[:people].size > 0 }
     end
 
     def fetch_people_data(domain)
